@@ -7,6 +7,7 @@ package main  // import "github.com/ijt/reposize"
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -17,9 +18,22 @@ import (
 )
 
 func main() {
+	if err := reposize(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func reposize() error {
 	sizeBytes := 0
 	n := 0
 	s := bufio.NewScanner(os.Stdin)
+	td, err := ioutil.TempDir("", "reposize")
+	if err := os.Chdir(td); err != nil {
+		return errors.Wrapf(err, "cd'ing into temp dir %s", td)
+	}
+	if err != nil {
+		return errors.Wrap(err, "making temp dir")
+	}
 	for s.Scan() {
 		r := s.Text()
 		log.Printf("sizing %s", r)
@@ -32,6 +46,7 @@ func main() {
 		n++
 	}
 	fmt.Printf("%d bytes (%.3fG) in %d repos\n", sizeBytes, float64(sizeBytes)/(1024.0*1024.0*1024.0), n)
+	return nil
 }
 
 var ghrx = regexp.MustCompile(`^github\.com/`)
