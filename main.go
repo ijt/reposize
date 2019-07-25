@@ -6,6 +6,7 @@ package main  // import "github.com/ijt/reposize"
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -17,6 +18,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+var verboseFlag = flag.Bool("v", false, "whether to log verbosely")
+var keepFlag = flag.Bool("k", false, "whether to keep repo dirs rather than deleting them")
+
 func main() {
 	if err := reposize(); err != nil {
 		log.Fatal(err)
@@ -24,6 +28,7 @@ func main() {
 }
 
 func reposize() error {
+	flag.Parse()
 	sizeBytes := 0
 	n := 0
 	s := bufio.NewScanner(os.Stdin)
@@ -34,10 +39,15 @@ func reposize() error {
 	if err != nil {
 		return errors.Wrap(err, "making temp dir")
 	}
+	if *verboseFlag {
+		log.Printf("working in %s", td)
+	}
 	for s.Scan() {
 		r := s.Text()
-		log.Printf("sizing %s", r)
-		sb, err := repoSize(r)
+		if *verboseFlag {
+			log.Printf("sizing %s", r)
+		}
+		sb, err := sizeOfOneRepo(r)
 		if err != nil {
 			log.Printf("%v", err)
 			continue
@@ -51,7 +61,7 @@ func reposize() error {
 
 var ghrx = regexp.MustCompile(`^github\.com/`)
 
-func repoSize(repo string) (int, error) {
+func sizeOfOneRepo(repo string) (int, error) {
 	// Clone the repo.
 	repo2 := ghrx.ReplaceAllString(repo, "git@github.com:")
 	out, err := exec.Command("git", "clone", repo2).CombinedOutput()
@@ -66,9 +76,11 @@ func repoSize(repo string) (int, error) {
 		return 0, errors.Wrap(err, "computing size of repo")
 	}
 
-	// Delete the repo.
-	if err := os.RemoveAll(d); err != nil {
-		return 0, errors.Wrapf(err, "removing %s", d)
+	if !*keepFlag {
+		// Delete the repo.
+		if err := os.RemoveAll(d); err != nil {
+			return 0, errors.Wrapf(err, "removing %s", d)
+		}
 	}
 
 	return sb, nil
