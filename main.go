@@ -45,7 +45,7 @@ func reposize() error {
 	for s.Scan() {
 		r := s.Text()
 		if *verboseFlag {
-			log.Printf("sizing %s", r)
+			log.Printf("%d bytes (%.3fG) in %d repos so far, sizing %s", sizeBytes, float64(sizeBytes)/(1024.0*1024.0*1024.0), n, r)
 		}
 		sb, err := sizeOfOneRepo(r)
 		if err != nil {
