@@ -49,9 +49,10 @@ func reposize() error {
 		}
 		sb, err := sizeOfOneRepo(r)
 		if err != nil {
-			fmt.Printf("%d,%s\n", sb, r)
+			log.Printf("error sizing repo %s: %v", r, err)
 			continue
 		}
+		fmt.Printf("%d,%s\n", sb, r)
 	}
 	return nil
 }
