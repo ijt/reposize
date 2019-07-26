@@ -10,10 +10,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -93,6 +95,25 @@ func dirSizeBytes(d string) (int, error) {
 	sb := 0
 	err := filepath.Walk(d, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			return nil
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			log.Printf("Failed to open %s. Skipping it.", path)
+			return nil
+		}
+		defer f.Close()
+		b := make([]byte, 512)
+		n, err := f.Read(b)
+		if err != nil {
+			log.Printf("Failed to read beginning of %s. Skipping it.", path)
+			return nil
+		}
+		typ := http.DetectContentType(b[:n])
+		if !strings.HasPrefix(typ, "text/") {
+			if *verboseFlag {
+				log.Printf("Skipping file %s with type %s", path, typ)
+			}
 			return nil
 		}
 		sb += int(info.Size())
