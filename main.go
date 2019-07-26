@@ -61,7 +61,9 @@ var ghrx = regexp.MustCompile(`^github\.com/`)
 
 func sizeOfOneRepo(repo string) (int, error) {
 	// Clone the repo.
-	out, err := exec.Command("git", "clone", fmt.Sprintf("https://%s.git", repo)).CombinedOutput()
+	cmd := exec.Command("git", "clone", fmt.Sprintf("https://%s.git", repo))
+	cmd.Env = []string{"GIT_TERMINAL_PROMPT=0"}
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return 0, errors.Wrapf(err, "clone failed: %s", out)
 	}
