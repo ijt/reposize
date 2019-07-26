@@ -1,6 +1,6 @@
 // Command reposize takes a newline-separated list of github repos on stdin,
-// clones them, computes their size, deletes them, and outputs the total
-// size in bytes on stdout.
+// clones them, computes their size, deletes them, and outputs to stdout
+// a CSV table with rows of sizebytes,repo.
 
 package main // import "github.com/ijt/reposize"
 
@@ -29,7 +29,6 @@ func main() {
 
 func reposize() error {
 	flag.Parse()
-	sizeBytes := 0
 	n := 0
 	s := bufio.NewScanner(os.Stdin)
 	td, err := ioutil.TempDir("", "reposize")
@@ -43,19 +42,17 @@ func reposize() error {
 		log.Printf("working in %s", td)
 	}
 	for s.Scan() {
+		n++
 		r := s.Text()
 		if *verboseFlag {
-			log.Printf("%d bytes (%.3fG) in %d repos so far, sizing %s", sizeBytes, float64(sizeBytes)/(1024.0*1024.0*1024.0), n, r)
+			log.Printf("sizing repo %d: %s", n, r)
 		}
 		sb, err := sizeOfOneRepo(r)
 		if err != nil {
-			log.Printf("%v", err)
+			fmt.Printf("%d,%s\n", sb, r)
 			continue
 		}
-		sizeBytes += sb
-		n++
 	}
-	fmt.Printf("%d bytes (%.3fG) in %d repos\n", sizeBytes, float64(sizeBytes)/(1024.0*1024.0*1024.0), n)
 	return nil
 }
 
