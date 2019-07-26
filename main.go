@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -59,8 +58,6 @@ func reposize() error {
 
 	return nil
 }
-
-var ghrx = regexp.MustCompile(`^github\.com/`)
 
 func sizeOfOneRepo(repo string) (int, error) {
 	td, err := ioutil.TempDir("", "reposize")
