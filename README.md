@@ -1,6 +1,6 @@
 # reposize
 
-`reposize` computes the total size of a bunch of git repositories.
+`reposize` computes the sizes of a set of git repositories.
 
 ```
 $ go get github.com/ijt/reposize
