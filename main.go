@@ -19,6 +19,7 @@ import (
 )
 
 var verboseFlag = flag.Bool("v", false, "whether to log verbosely")
+var numWorkers = flag.Int("n", 10, "number of workers to run")
 
 func main() {
 	if err := reposize(); err != nil {
@@ -26,23 +27,34 @@ func main() {
 	}
 }
 
+type token struct{}
+
 func reposize() error {
 	flag.Parse()
-	n := 0
+
+	// Start the work, using the semaphore pattern at
+	// https://www.youtube.com/watch?v=5zXAHh5tJqQ&t=33m22s
+	sem := make(chan token, *numWorkers)
 	s := bufio.NewScanner(os.Stdin)
 	for s.Scan() {
-		n++
-		r := s.Text()
-		if *verboseFlag {
-			log.Printf("sizing repo %d: %s", n, r)
-		}
-		sb, err := sizeOfOneRepo(r)
-		if err != nil {
-			log.Printf("error sizing repo %s: %v", r, err)
-			continue
-		}
-		fmt.Printf("%d,%s\n", sb, r)
+		repo := s.Text()
+		sem <- token{}
+		go func(r string) {
+			defer func() { <-sem }()
+			sb, err := sizeOfOneRepo(r)
+			if err != nil {
+				log.Printf("error sizing repo %s: %v", r, err)
+				return
+			}
+			fmt.Printf("%d,%s\n", sb, r)
+		}(repo)
 	}
+
+	// Wait for completion.
+	for n := *numWorkers; n > 0; n-- {
+		sem <- token{}
+	}
+
 	return nil
 }
 
