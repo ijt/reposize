@@ -2,7 +2,7 @@
 // clones them, computes their size, deletes them, and outputs the total
 // size in bytes on stdout.
 
-package main  // import "github.com/ijt/reposize"
+package main // import "github.com/ijt/reposize"
 
 import (
 	"bufio"
@@ -63,8 +63,7 @@ var ghrx = regexp.MustCompile(`^github\.com/`)
 
 func sizeOfOneRepo(repo string) (int, error) {
 	// Clone the repo.
-	repo2 := ghrx.ReplaceAllString(repo, "git@github.com:")
-	out, err := exec.Command("git", "clone", repo2).CombinedOutput()
+	out, err := exec.Command("git", "clone", fmt.Sprintf("https://%s.git", repo)).CombinedOutput()
 	if err != nil {
 		return 0, errors.Wrapf(err, "clone failed: %s", out)
 	}
