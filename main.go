@@ -19,7 +19,6 @@ import (
 )
 
 var verboseFlag = flag.Bool("v", false, "whether to log verbosely")
-var keepFlag = flag.Bool("k", false, "whether to keep repo dirs rather than deleting them")
 
 func main() {
 	if err := reposize(); err != nil {
@@ -31,16 +30,6 @@ func reposize() error {
 	flag.Parse()
 	n := 0
 	s := bufio.NewScanner(os.Stdin)
-	td, err := ioutil.TempDir("", "reposize")
-	if err := os.Chdir(td); err != nil {
-		return errors.Wrapf(err, "cd'ing into temp dir %s", td)
-	}
-	if err != nil {
-		return errors.Wrap(err, "making temp dir")
-	}
-	if *verboseFlag {
-		log.Printf("working in %s", td)
-	}
 	for s.Scan() {
 		n++
 		r := s.Text()
@@ -60,8 +49,14 @@ func reposize() error {
 var ghrx = regexp.MustCompile(`^github\.com/`)
 
 func sizeOfOneRepo(repo string) (int, error) {
+	td, err := ioutil.TempDir("", "reposize")
+	if err != nil {
+		return 0, errors.Wrap(err, "making temp dir")
+	}
+
 	// Clone the repo.
-	cmd := exec.Command("git", "clone", fmt.Sprintf("https://%s.git", repo))
+	d := filepath.Join(td, filepath.Base(repo))
+	cmd := exec.Command("git", "clone", fmt.Sprintf("https://%s.git", repo), d)
 	cmd.Env = []string{"GIT_TERMINAL_PROMPT=0"}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -69,17 +64,14 @@ func sizeOfOneRepo(repo string) (int, error) {
 	}
 
 	// Add the size of the repo.
-	d := filepath.Base(repo)
 	sb, err := dirSizeBytes(d)
 	if err != nil {
 		return 0, errors.Wrap(err, "computing size of repo")
 	}
 
-	if !*keepFlag {
-		// Delete the repo.
-		if err := os.RemoveAll(d); err != nil {
-			return 0, errors.Wrapf(err, "removing %s", d)
-		}
+	// Delete the repo.
+	if err := os.RemoveAll(td); err != nil {
+		return 0, errors.Wrapf(err, "removing %s", td)
 	}
 
 	return sb, nil
